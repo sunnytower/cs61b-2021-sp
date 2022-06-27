@@ -125,8 +125,8 @@ public class Model extends Observable {
                     //have a valid move.
                     if(nextRow!=r){
                         //check if merged.
-                        if(flag==nextRow&&board.tile(c,flag)!=null&&board.tile(c,flag).value()==t.value()){
-                            nextRow=find_index(c,r,flag);
+                        if(flag==nextRow&&board.tile(c,flag)!=null){
+                            nextRow=flag-1;
                         }
                         else if(board.tile(c,nextRow)!=null){
                             score+=t.value()*2;
