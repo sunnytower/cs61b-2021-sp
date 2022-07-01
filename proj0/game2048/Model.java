@@ -121,7 +121,7 @@ public class Model extends Observable {
                 //main idea.
                 Tile t=board.tile(c,r);
                 if(t!=null){
-                    int nextRow=find_index(c,r,size);
+                    int nextRow=findIndex(c,r,size);
                     //have a valid move.
                     if(nextRow!=r){
                         //check if merged.
@@ -148,7 +148,7 @@ public class Model extends Observable {
         return changed;
     }
 
-    public int find_index(int col,int row,int size){
+    public int findIndex(int col,int row,int size){
         if(row==size-1){
             return row;
         }
