@@ -1,6 +1,8 @@
 package IntList;
 
 import static org.junit.Assert.*;
+
+import jh61b.junit.In;
 import org.junit.Test;
 
 public class SquarePrimesTest {
@@ -15,6 +17,13 @@ public class SquarePrimesTest {
         IntList lst = IntList.of(14, 15, 16, 17, 18);
         boolean changed = IntListExercises.squarePrimes(lst);
         assertEquals("14 -> 15 -> 16 -> 289 -> 18", lst.toString());
+        assertTrue(changed);
+    }
+    @Test
+    public void testSquarePrimes1(){
+        IntList lst=IntList.of(1,2,3,4,5,7);
+        boolean changed=IntListExercises.squarePrimes(lst);
+        assertEquals("1 -> 4 -> 9 -> 4 -> 25 -> 49",lst.toString());
         assertTrue(changed);
     }
 }
