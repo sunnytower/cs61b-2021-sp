@@ -42,8 +42,8 @@ public class SquarePrimesTest {
     }
     @Test
     public void testSquarePrimes4(){
-        IntList lst=IntList.of(341);
+        IntList lst=IntList.of(1,9);
         boolean changed=IntListExercises.squarePrimes(lst);
-        assertEquals("341",lst.toString());
+        assertEquals("1 -> 9",lst.toString());
     }
 }
