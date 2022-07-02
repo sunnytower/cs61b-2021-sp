@@ -1,9 +1,5 @@
 package IntList;
 
-<<<<<<< HEAD
-=======
-import net.sf.saxon.functions.*;
->>>>>>> refs/remotes/origin/master
 
 public class IntListExercises {
 
