@@ -1,6 +1,8 @@
 package deque;
 
-public class ArrayDeque<T> implements Deque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private T[] items;
     private int size;
     private int length;
@@ -93,25 +95,6 @@ public class ArrayDeque<T> implements Deque<T> {
         }
         return items[front];
     }
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof ArrayDeque) {
-            if (o == this) {
-                return  true;
-            }
-            ArrayDeque<T> test = (ArrayDeque<T>) o;
-            if (test.size() != size) {
-                return false;
-            }
-            for (int i = 0; i < size; ++i) {
-                if (test.get(i) != get(i)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
     private boolean timeToResize() {
         return (length / size) >= 4;
     }
@@ -159,5 +142,46 @@ public class ArrayDeque<T> implements Deque<T> {
             return 0;
         }
         return index + 1;
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return  true;
+        }
+        if (o instanceof ArrayDeque) {
+            ArrayDeque<T> test = (ArrayDeque<T>) o;
+            if (test.size() != size) {
+                return false;
+            }
+            for (int i = 0; i < size; ++i) {
+                if (test.get(i) != get(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int pos;
+        ArrayDequeIterator() {
+            pos = 0;
+        }
+
+        public boolean hasNext() {
+            return pos < size;
+        }
+        public T next() {
+            T returnItem = get(pos);
+            pos += 1;
+            return returnItem;
+        }
     }
 }

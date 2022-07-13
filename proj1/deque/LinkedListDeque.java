@@ -1,6 +1,8 @@
 package deque;
 
-public class LinkedListDeque<T> implements Deque<T> {
+import java.util.Iterator;
+
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private class Node {
         private T item;
         private Node prev;
@@ -20,7 +22,7 @@ public class LinkedListDeque<T> implements Deque<T> {
 
     /** method */
     public LinkedListDeque() {
-        sentinel = new Node(null, null,null);
+        sentinel = new Node(null, null, null);
         sentinel.prev = sentinel;
         sentinel.next = sentinel;
         size = 0;
@@ -89,12 +91,27 @@ public class LinkedListDeque<T> implements Deque<T> {
         }
         return  curr.item;
     }
+    private T getRecursiveHelper(Node start, int index) {
+        if (index == 0) {
+            return start.item;
+        }
+        return getRecursiveHelper(start.next, index - 1);
+    }
+    public T getRecursive(int index) {
+        if (index >= size) {
+            return null;
+        }
+        return getRecursiveHelper(sentinel.next, index);
+    }
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return  true;
+        }
         if (o instanceof LinkedListDeque) {
-            if (o == this) {
-                return  true;
-            }
             LinkedListDeque<T> test = (LinkedListDeque<T>) o;
             if (test.size() != size) {
                 return false;
@@ -108,16 +125,23 @@ public class LinkedListDeque<T> implements Deque<T> {
         }
         return false;
     }
-    private T getRecursiveHelper(Node start, int index) {
-        if (index == 0) {
-            return start.item;
-        }
-        return getRecursiveHelper(start.next, index - 1);
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListDequeIterator();
     }
-    public T getRecursive(int index) {
-        if (index >= size) {
-            return null;
+    private class LinkedListDequeIterator implements Iterator<T> {
+        private Node front;
+        LinkedListDequeIterator() {
+            front = sentinel.next;
         }
-        return getRecursiveHelper(sentinel.next, index);
+
+        public boolean hasNext() {
+            return front != sentinel;
+        }
+        public T next() {
+            T returnItem = front.item;
+            front = front.next;
+            return returnItem;
+        }
     }
 }
