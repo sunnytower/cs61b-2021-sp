@@ -2,6 +2,7 @@ package bstmap;
 
 
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -45,25 +46,25 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     }
 @Override
     public V get(K key) {
-        return getHelper(root, key);
+        return get(root, key);
     }
-    private V getHelper(Node x, K key) {
+    private V get(Node x, K key) {
         if (key == null) throw new IllegalArgumentException("argument to containsKey() is null");
         if (x == null) return null;
         int cmp = key.compareTo(x.key);
         if (cmp < 0) {
-            return getHelper(x.left, key);
+            return get(x.left, key);
         } else if (cmp > 0) {
-            return getHelper(x.right, key);
+            return get(x.right, key);
         } else {
             return x.value;
         }
     }
 @Override
     public int size() {
-        return sizeHelper(root);
+        return size(root);
     }
-    private int sizeHelper(Node x) {
+    private int size(Node x) {
         if (x == null) {
             return 0;
         }
@@ -86,27 +87,89 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         } else {
             x.value = val;
         }
-        x.size = 1 + sizeHelper(x.left) + sizeHelper(x.right);
+        x.size = 1 + size(x.left) + size(x.right);
         return x;
     }
-    public void PrintInOrder() {
-
+    private void printInOrder() {
+        printInOrder(root);
+    }
+    private void printInOrder(Node x) {
+        if (x == null) {
+            return;
+        }
+        printInOrder(x.left);
+        System.out.println(x.key + "->" + x.value);
+        printInOrder(x.right);
     }
     @Override
     public Set<K> keySet() {
-        throw new UnsupportedOperationException("invalid operation.");
+        Set<K> set = new HashSet<>();
+        addKeys(root, set);
+        return set;
+    }
+    private void addKeys(Node x, Set<K> set) {
+        if (x == null) {
+            return;
+        }
+        set.add(x.key);
+        addKeys(x.left, set);
+        addKeys(x.right, set);
     }
 @Override
     public V remove(K key) {
-        throw new UnsupportedOperationException("invalid operation.");
+        if(containsKey(key)) {
+            V target = get(key);
+            root = remove(root, key);
+            return target;
+        }
+        return null;
     }
+    private Node remove(Node x, K key) {
+        if (x == null) {
+            return null;
+        }
+        int cmp = key.compareTo(x.key);
+        if (cmp < 0) {
+            x.left = remove(x.left, key);
+        } else if (cmp > 0) {
+            x.right = remove(x.right, key);
+        } else {
+            if (x.right == null) {
+                return x.left;
+            }
+            if (x.left == null) {
+                return x.right;
+            }
+            Node t = x;
+            x = getMin(t.right);
+            x.left = t.left;
+            x.right = remove(t.right, x.key);
+        }
+        x.size = size(x.left) + size(x.right) + 1;
+        return x;
+    }
+    private Node getMin(Node x) {
+        if (x.left == null) {
+            return x;
+        } else {
+            return getMin(x.left);
+        }
+    }
+
 @Override
     public V remove(K key, V value) {
-        throw new UnsupportedOperationException("invalid operation.");
+        if (containsKey(key)) {
+            V target = get(key);
+            if (target.equals(value)) {
+                root = remove(root, key);
+                return target;
+            }
+        }
+        return null;
     }
 @Override
     public Iterator<K> iterator() {
-        throw new UnsupportedOperationException("invalid operation.");
+        return keySet().iterator();
     }
 
 }
