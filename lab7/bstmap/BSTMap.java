@@ -90,7 +90,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         x.size = 1 + size(x.left) + size(x.right);
         return x;
     }
-    private void printInOrder() {
+    public void printInOrder() {
         printInOrder(root);
     }
     private void printInOrder(Node x) {
