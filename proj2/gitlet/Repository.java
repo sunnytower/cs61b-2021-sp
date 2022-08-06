@@ -1,6 +1,11 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
 import static gitlet.Utils.*;
 
 
@@ -30,6 +35,7 @@ public class Repository {
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
+    /** temporary save the added blobs.*/
     public static final File STAGING_DIR = join(GITLET_DIR, "staging");
     public static final File BLOBS_DIR = join(GITLET_DIR, "blobs");
     public static final File COMMITS_DIR = join(GITLET_DIR, "commits");
@@ -42,32 +48,142 @@ public class Repository {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             System.exit(0);
         }
-        // setup dir.
+        // setup dir and file.
+        setupPersistence();
+        // initial commit.
+        Commit initial = new Commit();
+        initial.save(join(COMMITS_DIR, initial.getId()));
+        // branch master contains commit id. ----> refs/heads/master.
+        String branch = "master";
+        writeContents(join(HEADS_DIR, branch), initial.getId());
+        // create HEAD. -> master.
+        writeContents(HEAD, branch);
+        // initial STAGE.
+        new StagingArea().save(STAGE);
+        System.out.println("initial commit id " + initial.getId());
+    }
+    public static void add(String filename) {
+        Blob blob = new Blob(filename, CWD);
+        //failure case.
+        if (!blob.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+        Commit head = getHead();
+        StagingArea stage = getStage();
+        String headBId = head.getBlobs().getOrDefault(filename, null);
+        String stageBId = stage.getAdded().getOrDefault(filename, null);
+        String blobId = blob.getBlobId();
+        // if HEAD contains this blob.
+        if (blobId.equals(headBId)) {
+            //check stage contains the early version of file, if so, delete it.
+            if (!blobId.equals(stageBId)) {
+                if (stageBId != null) {
+                    join(STAGING_DIR, stageBId).delete();
+                }
+                stage.getAdded().remove(stageBId);
+                stage.getRemoved().remove(filename);
+                stage.save(STAGE);
+            }
+        } else if (!blobId.equals(stageBId)){
+            // need to update.
+            if (stageBId != null) {
+                join(STAGING_DIR, stageBId).delete();
+            }
+            blob.save(join(STAGING_DIR, blobId));
+            stage.add(filename, blobId);
+            stage.save(STAGE);
+            System.out.println("add blob id " + blobId);
+        }
+    }
+    public static void commit(String message) {
+        //failure cases.
+        if (message.isBlank()) {
+            System.out.println("Please enter a commit message.");
+            System.exit(0);
+        }
+        //if stagingArea is empty
+        if (getStage().isEmpty()) {
+            System.out.println("No changes added to the commit.");
+            System.exit(0);
+        }
+        //copy from parent, save the stagingArea file to blobs.
+        Commit commit = new Commit(message, getHead(), getStage());
+        //clean stagingArea and save to the blobs dir.
+        cleanStagingAreaAndSave();
+        //set the HEAD and branch to new commit. (if no branch, just update branch content)
+        setHeadToNewCommit(commit);
+        //save commits to files.
+        commit.save(join(COMMITS_DIR, commit.getId()));
+        System.out.println("new commit id " + commit.getId());
+    }
+    public static void checkArgument(int actual, int expected) {
+        if (actual != expected) {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+        }
+    }
+    /** from HEAD get the last commit object.*/
+    private static Commit getHead() {
+        //get the HEAD contents.
+        File branchFile =  convertHeadToBranchFile();
+        //get commitId from branch file.
+        String commitId = readContentsAsString(branchFile);
+        return convertIdToCommit(commitId);
+    }
+    private static File convertHeadToBranchFile() {
+        String branchName = readContentsAsString(HEAD);
+        return join(HEADS_DIR, branchName);
+        //return getBranchFile(branchName);
+    }
+    private static void setHeadToNewCommit(Commit commit) {
+        File branchFile = convertHeadToBranchFile();
+        writeContents(branchFile, commit.getId());
+    }
+    private static Commit convertIdToCommit(String commitId) {
+        File file = join(COMMITS_DIR, commitId);
+        if (!file.exists()) {
+            return null;
+        }
+        return readObject(file, Commit.class);
+    }
+//    private static File getBranchFile(String branchName){
+//        File file = join(HEADS_DIR, branchName);
+//        return file;
+//    }
+    private static StagingArea getStage() {
+        return readObject(STAGE, StagingArea.class);
+    }
+    private static void setupPersistence() {
         GITLET_DIR.mkdir();
         STAGING_DIR.mkdir();
         BLOBS_DIR.mkdir();
         COMMITS_DIR.mkdir();
         REFS_DIR.mkdir();
         HEADS_DIR.mkdir();
-
-        // initial commit.
-        Commit inital = new Commit();
-        saveCommitToFile(inital);
-        // branch master contains commit id. ----> refs/heads/master.
-        String branch = "master";
-        File master = join(HEADS_DIR, branch);
-        writeContents(master, inital.getId());
-
-        // create HEAD. -> master.
-        writeContents(HEAD, branch);
-        // initial STAGE.
-        writeObject(STAGE, new StagingArea());
     }
-    private static void saveCommitToFile(Commit c) {
-        File file = join(COMMITS_DIR, c.getId());
-        writeObject(file, c);
+    public static void checkInitial() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
     }
-    public static void add(String filename) {
-
+    /** source:https://stackoverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java
+     * */
+    private static void cleanStagingAreaAndSave() {
+        File[] files = STAGING_DIR.listFiles();
+        if (files == null) {
+            return;
+        }
+        Path blobPath = BLOBS_DIR.toPath();
+        for (File file : files) {
+            Path source = file.toPath();
+            try {
+                Files.move(source, blobPath.resolve(source.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        new StagingArea().save(STAGE);
     }
 }

@@ -1,14 +1,18 @@
 package gitlet;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static gitlet.Utils.*;
+
 public class StagingArea implements Serializable {
-    //update: filename -> blobsId.
+    //update: <filename, blobId>
     private Map<String, String> added;
+    //filename.
     private Set<String> removed;
 
     public StagingArea() {
@@ -17,9 +21,11 @@ public class StagingArea implements Serializable {
     }
     public void add(String filename, String blobId) {
         added.put(filename, blobId);
+        removed.remove(filename);
     }
-    public boolean isEmpty() {
-        return added.isEmpty() && removed.isEmpty();
+    public void remove(String filename) {
+        added.remove(filename);
+        removed.remove(filename);
     }
     public Map<String, String> getAdded() {
         return added;
@@ -27,5 +33,20 @@ public class StagingArea implements Serializable {
     public Set<String> getRemoved() {
         return removed;
     }
+    public void save(File file) {
+        writeObject(file, this);
+    }
+    public Blob convertFilenameToBlob(String filename, File BlobPath) {
+        if (!added.containsKey(filename)) {
+            return null;
+        }
+        String blobId = added.get(filename);
+        File file = join(BlobPath, blobId);
+        Blob blob = readObject(file, Blob.class);
+        return blob;
+    }
 
+    public boolean isEmpty() {
+        return added.isEmpty() && removed.isEmpty();
+    }
 }

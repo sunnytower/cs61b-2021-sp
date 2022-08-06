@@ -6,24 +6,30 @@ import java.io.Serializable;
 import static gitlet.Utils.*;
 
 public class Blob implements Serializable {
-    /** file object. */
-    /** relative path.*/
+    /** file object. same filename + contents is the same blob. */
     private String filename;
     private String id;
     private byte[] contents;
-    /** setup the property. */
+    /** set up the property. */
     public Blob(String filename, File cwd) {
         this.filename = filename;
         File file = join(cwd, filename);
         if (file.exists()) {
             contents = readContents(file);
-            id = sha1(filename, contents.toString());
+            id = sha1(filename, contents);
         } else {
+            /** if file don't exists, content == null.
+             *  for check file.exists.
+             * */
             contents = null;
         }
     }
+    // the corresponding file exists.
     public boolean exists() {
         return contents != null;
+    }
+    public void save(File file) {
+        writeObject(file, this);
     }
     public String getFilename() {
         return filename;
