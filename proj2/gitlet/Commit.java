@@ -83,9 +83,28 @@ public class Commit implements Serializable {
     public List<String> getParents() {
         return parents;
     }
+    public String getMessage() {
+        return message;
+    }
     public void save(File file) {
         writeObject(file, this);
     }
-
-
+    public String getSelfLog() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("===\n");
+        sb.append("commit " + this.id + "\n");
+        if (parents.size() == 2) {
+            sb.append("Merge: " + parents.get(0).substring(0, 7) + " " + parents.get(1).substring(0, 7));
+        }
+        sb.append("Date: " + getDate() + "\n");
+        sb.append(message + "\n");
+        sb.append("\n");
+        return sb.toString();
+    }
+    public String getFirstParentId() {
+        if (parents.isEmpty()) {
+            return null;
+        }
+        return parents.get(0);
+    }
 }
