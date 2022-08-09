@@ -155,7 +155,7 @@ public class Repository {
     }
     public static void globalLog() {
         StringBuilder sb = new StringBuilder();
-        List<String> filenames = plainFilenamesIn(HEADS_DIR);
+        List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
             Commit c = Commit.idToCommit(filename);
             sb.append(c.getSelfLog());
@@ -164,7 +164,7 @@ public class Repository {
     }
     public static void find(String message) {
         StringBuilder sb = new StringBuilder();
-        List<String> filenames = plainFilenamesIn(HEADS_DIR);
+        List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
             Commit c = Commit.idToCommit(filename);
             if (c.getMessage().contains(message)) {
