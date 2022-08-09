@@ -59,7 +59,7 @@ public class Main {
             case "checkout":
                 Repository.checkInitial();
                 int length = args.length;
-                if (length > 4 | length < 2) {
+                if (length > 4 || length < 2) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
                 } else if (length == 3){

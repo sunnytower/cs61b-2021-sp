@@ -137,6 +137,7 @@ public class Commit implements Serializable {
     }
 
     public void checkUntrackedFile(List<String> untracked, File dir) {
+        String e = "There is an untracked file in the way; delete it, or add and commit it first.";
         if (untracked.isEmpty()) {
             return;
         }
@@ -144,8 +145,7 @@ public class Commit implements Serializable {
             String currFileId = new Blob(file, dir).getBlobId();
             String blobId = blobs.getOrDefault(file, null);
             if (!currFileId.equals(blobId)) {
-                String err = "There is an untracked file in the way; delete it, or add and commit it first.";
-                System.out.println(err);
+                System.out.println(e);
                 System.exit(0);
             }
         }
