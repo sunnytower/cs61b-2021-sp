@@ -153,7 +153,7 @@ public class Repository {
         Commit commit = getHead();
         while (commit != null) {
             sb.append(commit.getSelfLog());
-            commit = convertIdToCommit(commit.getFirstParentId());
+            commit = idToCommit(commit.getFirstParentId());
         }
         System.out.println(sb);
     }
@@ -161,7 +161,7 @@ public class Repository {
         StringBuilder sb = new StringBuilder();
         List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
-            Commit c = convertIdToCommit(filename);
+            Commit c = idToCommit(filename);
             sb.append(c.getSelfLog());
         }
         System.out.println(sb);
@@ -170,7 +170,7 @@ public class Repository {
         StringBuilder sb = new StringBuilder();
         List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
-            Commit c = convertIdToCommit(filename);
+            Commit c = idToCommit(filename);
             if (c.getMessage().contains(message)) {
                 sb.append(c.getId()+ "\n");
             }
@@ -217,7 +217,14 @@ public class Repository {
         System.out.println(sb);
     }
     public static void checkoutFile(String filename) {
-
+        String headBId = getHead().getBlobs().getOrDefault(filename, null);
+        if (headBId == null) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        } else {
+            Blob file = idToBlob(headBId, BLOBS_DIR);
+            writeContents(join(CWD, filename), file.getContents());
+        }
     }
     public static void checkoutCommit(String commitId, String filename) {
 
@@ -232,24 +239,44 @@ public class Repository {
             System.exit(0);
         }
     }
-    /** from HEAD get the last commit object.*/
     private static Commit getHead() {
         //get the HEAD contents.
-        File branchFile =  convertHeadToBranchFile();
+        File branchFile =  headToBranchFile();
         //get commitId from branch file.
         String commitId = readContentsAsString(branchFile);
-        return convertIdToCommit(commitId);
+        return idToCommit(commitId);
     }
-    private static File convertHeadToBranchFile() {
+    private static File headToBranchFile() {
         String branchName = readContentsAsString(HEAD);
         return join(HEADS_DIR, branchName);
         //return getBranchFile(branchName);
     }
     private static void setHeadToNewCommit(Commit commit) {
-        File branchFile = convertHeadToBranchFile();
+        File branchFile = headToBranchFile();
         writeContents(branchFile, commit.getId());
     }
-    private static Commit convertIdToCommit(String commitId) {
+
+    /**
+     * @param blobId
+     * @param path : maybe STAGING_DIR or BLOBS_DIR.
+     * @return find blob corresponding to blobId.
+     */
+    private static Blob idToBlob(String blobId, File path) {
+        if (blobId == null) {
+            return null;
+        }
+        File file = join(path, blobId);
+        if (!file.exists()) {
+            return null;
+        }
+        return readObject(file, Blob.class);
+    }
+
+    /**
+     * @param commitId
+     * @return find commit corresponding to commitId.
+     */
+    private static Commit idToCommit(String commitId) {
         if (commitId == null) {
             return null;
         }
@@ -280,7 +307,9 @@ public class Repository {
             System.exit(0);
         }
     }
-    /** source:https://stackoverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java
+    /**
+     *
+     * source:https://sta grverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java
      * */
     private static void cleanStagingAreaAndSave() {
         File[] files = STAGING_DIR.listFiles();
@@ -298,4 +327,5 @@ public class Repository {
         }
         new StagingArea().save(STAGE);
     }
+
 }
