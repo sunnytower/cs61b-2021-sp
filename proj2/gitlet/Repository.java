@@ -153,7 +153,7 @@ public class Repository {
         Commit commit = getHead();
         while (commit != null) {
             sb.append(commit.getSelfLog());
-            commit = idToCommit(commit.getFirstParentId());
+            commit = Commit.idToCommit(commit.getFirstParentId());
         }
         System.out.println(sb);
     }
@@ -161,7 +161,7 @@ public class Repository {
         StringBuilder sb = new StringBuilder();
         List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
-            Commit c = idToCommit(filename);
+            Commit c = Commit.idToCommit(filename);
             sb.append(c.getSelfLog());
         }
         System.out.println(sb);
@@ -170,7 +170,7 @@ public class Repository {
         StringBuilder sb = new StringBuilder();
         List<String> filenames = plainFilenamesIn(COMMITS_DIR);
         for (String filename : filenames) {
-            Commit c = idToCommit(filename);
+            Commit c = Commit.idToCommit(filename);
             if (c.getMessage().contains(message)) {
                 sb.append(c.getId()+ "\n");
             }
@@ -217,17 +217,33 @@ public class Repository {
         System.out.println(sb);
     }
     public static void checkoutFile(String filename) {
-        String headBId = getHead().getBlobs().getOrDefault(filename, null);
-        if (headBId == null) {
+        checkoutFileFromCommit(filename, getHead());
+    }
+
+    /**
+     *
+     * @param commitId : maybe short version of real commit.
+     * @param filename
+     */
+    public static void checkoutCommit(String commitId, String filename) {
+        Commit commit = Commit.idToCommit(commitId);
+        // commit don't exists.
+        if (commit == null) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        } else {
+            checkoutFileFromCommit(filename, commit);
+        }
+    }
+    private static void checkoutFileFromCommit(String filename, Commit commit) {
+        String commitId = commit.getBlobs().getOrDefault(filename, null);
+        if (commitId == null) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         } else {
-            Blob file = idToBlob(headBId, BLOBS_DIR);
+            Blob file = Blob.idToBlob(commitId, BLOBS_DIR);
             writeContents(join(CWD, filename), file.getContents());
         }
-    }
-    public static void checkoutCommit(String commitId, String filename) {
-
     }
     public static void checkoutBranch(String branchName) {
 
@@ -244,7 +260,7 @@ public class Repository {
         File branchFile =  headToBranchFile();
         //get commitId from branch file.
         String commitId = readContentsAsString(branchFile);
-        return idToCommit(commitId);
+        return Commit.idToCommit(commitId);
     }
     private static File headToBranchFile() {
         String branchName = readContentsAsString(HEAD);
@@ -256,36 +272,9 @@ public class Repository {
         writeContents(branchFile, commit.getId());
     }
 
-    /**
-     * @param blobId
-     * @param path : maybe STAGING_DIR or BLOBS_DIR.
-     * @return find blob corresponding to blobId.
-     */
-    private static Blob idToBlob(String blobId, File path) {
-        if (blobId == null) {
-            return null;
-        }
-        File file = join(path, blobId);
-        if (!file.exists()) {
-            return null;
-        }
-        return readObject(file, Blob.class);
-    }
 
-    /**
-     * @param commitId
-     * @return find commit corresponding to commitId.
-     */
-    private static Commit idToCommit(String commitId) {
-        if (commitId == null) {
-            return null;
-        }
-        File file = join(COMMITS_DIR, commitId);
-        if (!file.exists()) {
-            return null;
-        }
-        return readObject(file, Commit.class);
-    }
+
+
 //    private static File getBranchFile(String branchName){
 //        File file = join(HEADS_DIR, branchName);
 //        return file;

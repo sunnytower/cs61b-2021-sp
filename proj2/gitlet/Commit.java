@@ -7,6 +7,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static gitlet.Repository.COMMITS_DIR;
 import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
@@ -106,5 +107,29 @@ public class Commit implements Serializable {
             return null;
         }
         return parents.get(0);
+    }
+    /**
+     * @param commitId maybe the abbreviation of commitId.
+     * @return find commit corresponding to commitId.
+     */
+    public static Commit idToCommit(String commitId) {
+        if (commitId == null) {
+            return null;
+        }
+        if (commitId.length() == UID_LENGTH) {
+            File file = join(COMMITS_DIR, commitId);
+            if (!file.exists()) {
+                return null;
+            }
+            return readObject(file, Commit.class);
+        } else {
+            // abbreviation of commitId.
+            for (String filename : COMMITS_DIR.list()) {
+                if (filename.startsWith(commitId)) {
+                    return readObject(join(COMMITS_DIR, filename), Commit.class);
+                }
+            }
+        }
+        return null;
     }
 }

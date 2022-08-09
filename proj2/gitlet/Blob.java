@@ -43,4 +43,19 @@ public class Blob implements Serializable {
     public String getContentsAsString() {
         return new String(contents);
     }
+    /**
+     * @param blobId
+     * @param path : maybe STAGING_DIR or BLOBS_DIR.
+     * @return find blob corresponding to blobId.
+     */
+    public static Blob idToBlob(String blobId, File path) {
+        if (blobId == null) {
+            return null;
+        }
+        File file = join(path, blobId);
+        if (!file.exists()) {
+            return null;
+        }
+        return readObject(file, Blob.class);
+    }
 }
