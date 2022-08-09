@@ -7,6 +7,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static gitlet.Repository.BLOBS_DIR;
 import static gitlet.Repository.COMMITS_DIR;
 import static gitlet.Utils.*;
 
@@ -131,5 +132,33 @@ public class Commit implements Serializable {
             }
         }
         return null;
+    }
+
+    /**
+     * write all files in the commit to the dir.
+     * @param dir
+     */
+    public void writeAllFiles(File dir) {
+        List<Blob> getBlobs = new ArrayList<>();
+        for (String blobId : blobs.values()) {
+            getBlobs.add(Blob.idToBlob(blobId, BLOBS_DIR));
+        }
+        for (Blob blob : getBlobs) {
+            writeContents(join(dir, blob.getFilename()), blob.getContents());
+        }
+    }
+
+    public void checkUntrackedFile(List<String> untracked, File dir) {
+        if (untracked.isEmpty()) {
+            return;
+        }
+        for (String file : untracked) {
+            String currFileId = new Blob(file, dir).getBlobId();
+            String id = blobs.getOrDefault(file, null);
+            if (!currFileId.equals(id)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
+        }
     }
 }

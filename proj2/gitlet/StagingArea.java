@@ -36,12 +36,12 @@ public class StagingArea implements Serializable {
     public void save(File file) {
         writeObject(file, this);
     }
-    public Blob convertFilenameToBlob(String filename, File BlobPath) {
+    public Blob filenameToBlob(String filename, File blobPath) {
         if (!added.containsKey(filename)) {
             return null;
         }
         String blobId = added.get(filename);
-        File file = join(BlobPath, blobId);
+        File file = join(blobPath, blobId);
         Blob blob = readObject(file, Blob.class);
         return blob;
     }

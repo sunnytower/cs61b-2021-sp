@@ -58,4 +58,12 @@ public class Blob implements Serializable {
         }
         return readObject(file, Blob.class);
     }
+
+    /**
+     * write blob contents to file file.
+     * @param file
+     */
+    public void writeFile(File file) {
+        writeContents(file, getContents());
+    }
 }

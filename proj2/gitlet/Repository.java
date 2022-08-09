@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -47,6 +48,7 @@ public class Repository {
     public static final File HEAD = join(GITLET_DIR, "HEAD");
     public static final File STAGE = join(GITLET_DIR, "STAGE");
     public static void init() {
+        //failure case.
         if (GITLET_DIR.exists()) {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             System.exit(0);
@@ -151,7 +153,7 @@ public class Repository {
     }
     public static void globalLog() {
         StringBuilder sb = new StringBuilder();
-        List<String> filenames = plainFilenamesIn(COMMITS_DIR);
+        List<String> filenames = plainFilenamesIn(HEADS_DIR);
         for (String filename : filenames) {
             Commit c = Commit.idToCommit(filename);
             sb.append(c.getSelfLog());
@@ -160,11 +162,11 @@ public class Repository {
     }
     public static void find(String message) {
         StringBuilder sb = new StringBuilder();
-        List<String> filenames = plainFilenamesIn(COMMITS_DIR);
+        List<String> filenames = plainFilenamesIn(HEADS_DIR);
         for (String filename : filenames) {
             Commit c = Commit.idToCommit(filename);
             if (c.getMessage().contains(message)) {
-                sb.append(c.getId()+ "\n");
+                sb.append(c.getId() + "\n");
             }
         }
         if (sb.toString().isEmpty()) {
@@ -201,7 +203,6 @@ public class Repository {
         }
         sb.append("\n");
         //modifications not staged for commit and untracked files. leave blank for now.
-        //todo.
         sb.append("=== Modifications Not Staged For Commit ===\n");
         sb.append("\n");
         sb.append("=== Untracked Files ===\n");
@@ -212,11 +213,6 @@ public class Repository {
         checkoutFileFromCommit(filename, getHead());
     }
 
-    /**
-     *
-     * @param commitId : maybe short version of real commit.
-     * @param filename
-     */
     public static void checkoutCommit(String commitId, String filename) {
         Commit commit = Commit.idToCommit(commitId);
         // commit don't exists.
@@ -227,70 +223,90 @@ public class Repository {
             checkoutFileFromCommit(filename, commit);
         }
     }
+
     private static void checkoutFileFromCommit(String filename, Commit commit) {
         String commitId = commit.getBlobs().getOrDefault(filename, null);
         if (commitId == null) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         } else {
-            Blob file = Blob.idToBlob(commitId, BLOBS_DIR);
-            writeContents(join(CWD, filename), file.getContents());
+            Blob blob = Blob.idToBlob(commitId, BLOBS_DIR);
+            blob.writeFile(join(CWD, filename));
         }
     }
     public static void checkoutBranch(String branchName) {
-
-    }
-
-    public static void checkArgument(int actual, int expected) {
-        if (actual != expected) {
-            System.out.println("Incorrect operands.");
+        //if current branch is checkout-branch.
+        String headBranchName = readContentsAsString(HEAD);
+        if (headBranchName == branchName) {
+            System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
+        //if branchName doesn't exists.
+        List<String> branchesName = plainFilenamesIn(HEADS_DIR);
+        if (!branchesName.contains(branchName)) {
+            System.out.println("No such branch exists.");
+            System.exit(0);
+        }
+        Commit otherBranch = getCommitFromBranchName(branchName);
+        //check untracked files.
+        otherBranch.checkUntrackedFile(getUntrakcedFile(), CWD);
+        // clean stagingArea.
+        cleanStagingAreaAndSave();
+        // overwrite the working directory.
+        // maybe not safe!!!!!!!!!
+        for (File file : CWD.listFiles()) {
+            restrictedDelete(file);
+        }
+        otherBranch.writeAllFiles(CWD);
+        //change the HEAD to current branch.
+        writeContents(HEAD, branchName);
+    }
+    public static void branch(String branchName) {
+        List<String> branchesName = plainFilenamesIn(HEADS_DIR);
+        if (branchesName.contains(branchName)) {
+            System.out.println("A branch with that name already exists.");
+            System.exit(0);
+        }
+        writeContents(join(HEADS_DIR, branchName), getHead().getId());
+
+    }
+
+    private static List<String> getUntrakcedFile() {
+        List<String> untracked = new ArrayList<>();
+        Set<String> headFiles = getHead().getBlobs().keySet();
+        Set<String> stageFiles = getStage().getAdded().keySet();
+        for (String file : plainFilenamesIn(CWD)) {
+            if (!headFiles.contains(file) && !stageFiles.contains(file)) {
+                untracked.add(file);
+            }
+//            if (file.contains(".DS_")) {
+//                untracked.remove(file);
+//            }
+        }
+
+        return untracked;
+    }
+    private static Commit getCommitFromBranchName(String name) {
+        File branch = join(HEADS_DIR, name);
+        return Commit.idToCommit(readContentsAsString(branch));
     }
     private static Commit getHead() {
-        //get the HEAD contents.
-        File branchFile =  headToBranchFile();
-        //get commitId from branch file.
+        String headBranchName = readContentsAsString(HEAD);
+        File branchFile =  join(HEADS_DIR, headBranchName);
         String commitId = readContentsAsString(branchFile);
         return Commit.idToCommit(commitId);
     }
-    private static File headToBranchFile() {
-        String branchName = readContentsAsString(HEAD);
-        return join(HEADS_DIR, branchName);
-        //return getBranchFile(branchName);
-    }
     private static void setHeadToNewCommit(Commit commit) {
-        File branchFile = headToBranchFile();
+        String headBranchName = readContentsAsString(HEAD);
+        File branchFile =  join(HEADS_DIR, headBranchName);
         writeContents(branchFile, commit.getId());
     }
-
-
-
-
-//    private static File getBranchFile(String branchName){
-//        File file = join(HEADS_DIR, branchName);
-//        return file;
-//    }
     private static StagingArea getStage() {
         return readObject(STAGE, StagingArea.class);
     }
-    private static void setupPersistence() {
-        GITLET_DIR.mkdir();
-        STAGING_DIR.mkdir();
-        BLOBS_DIR.mkdir();
-        COMMITS_DIR.mkdir();
-        REFS_DIR.mkdir();
-        HEADS_DIR.mkdir();
-    }
-    public static void checkInitial() {
-        if (!GITLET_DIR.exists()) {
-            System.out.println("Not in an initialized Gitlet directory.");
-            System.exit(0);
-        }
-    }
+
     /**
-     *
-     * source:https://sta grverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java
+     * source:https://sta grverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java.
      * */
     private static void cleanStagingAreaAndSave() {
         File[] files = STAGING_DIR.listFiles();
@@ -308,5 +324,24 @@ public class Repository {
         }
         new StagingArea().save(STAGE);
     }
-
+    public static void checkArgument(int actual, int expected) {
+        if (actual != expected) {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+        }
+    }
+    private static void setupPersistence() {
+        GITLET_DIR.mkdir();
+        STAGING_DIR.mkdir();
+        BLOBS_DIR.mkdir();
+        COMMITS_DIR.mkdir();
+        REFS_DIR.mkdir();
+        HEADS_DIR.mkdir();
+    }
+    public static void checkInitial() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
+    }
 }
