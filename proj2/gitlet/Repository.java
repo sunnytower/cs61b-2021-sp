@@ -50,7 +50,8 @@ public class Repository {
     public static void init() {
         //failure case.
         if (GITLET_DIR.exists()) {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            String err = "A Gitlet version-control system already exists in the current directory.";
+            System.out.println(err);
             System.exit(0);
         }
         // setup dir and file.
@@ -89,7 +90,7 @@ public class Repository {
                 stage.getRemoved().remove(filename);
                 stage.save(STAGE);
             }
-        } else if (!blobId.equals(stageBId)){
+        } else if (!blobId.equals(stageBId)) {
             // need to update.
             if (stageBId != null) {
                 join(STAGING_DIR, stageBId).delete();
@@ -111,7 +112,7 @@ public class Repository {
             System.exit(0);
         }
         //copy from parent, save the stagingArea file to blobs.
-        Commit commit = new Commit(message, getHead(), getStage());
+        Commit commit = new Commit(message, List.of(getHead()), getStage());
         //clean stagingArea and save to the blobs dir.
         cleanStagingAreaAndSave();
         //set the HEAD and branch to new commit. (if no branch, just update branch content)
@@ -305,10 +306,6 @@ public class Repository {
     private static StagingArea getStage() {
         return readObject(STAGE, StagingArea.class);
     }
-
-    /**
-     * source:https://sta grverflow.com/questions/4645242/how-do-i-move-a-file-from-one-location-to-another-in-java.
-     * */
     private static void cleanStagingAreaAndSave() {
         File[] files = STAGING_DIR.listFiles();
         if (files == null) {
@@ -318,7 +315,8 @@ public class Repository {
         for (File file : files) {
             Path source = file.toPath();
             try {
-                Files.move(source, blobPath.resolve(source.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                Path res = blobPath.resolve(source.getFileName());
+                Files.move(source, res, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 e.printStackTrace();
             }

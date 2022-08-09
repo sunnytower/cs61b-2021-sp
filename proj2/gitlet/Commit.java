@@ -43,28 +43,14 @@ public class Commit implements Serializable {
         timeStamp = new Date(0);
         id = sha1(message, timeStamp.toString());
     }
-    public Commit(String message, Commit parents, StagingArea stage) {
-        this.message = message;
-        this.timeStamp = new Date();
-        this.parents = new ArrayList<>(2);
-        blobs = new HashMap<>();
-        this.parents.add(parents.getId());
-        blobs.putAll(parents.getBlobs());
-        //change blobs according to stagingArea.
-        blobs.putAll(stage.getAdded());
-        Set<String> removed = stage.getRemoved();
-        for (String filename : removed) {
-            blobs.remove(filename);
-        }
-        this.id = sha1(message, timeStamp.toString(), this.parents.toString(), this.blobs.toString());
-    }
+
     //default commit get contents from its parents.
-    public Commit(String message, List<Commit> parents, StagingArea stage) {
-        this.message = message;
-        this.timeStamp = new Date();
-        this.parents = new ArrayList<>(2);
+    public Commit(String mes, List<Commit> ps, StagingArea stage) {
+        message = mes;
+        timeStamp = new Date();
+        parents = new ArrayList<>(2);
         blobs = new HashMap<>();
-        for (Commit c : parents) {
+        for (Commit c : ps) {
             this.parents.add(c.getId());
             blobs.putAll(c.getBlobs());
         }
@@ -74,7 +60,7 @@ public class Commit implements Serializable {
         for (String filename : removed) {
             blobs.remove(filename);
         }
-        this.id = sha1(message, timeStamp, this.parents, this.blobs);
+        id = sha1(message, timeStamp.toString(), parents.toString(), blobs.toString());
     }
     public String getId() {
         return id;
@@ -96,7 +82,9 @@ public class Commit implements Serializable {
         sb.append("===\n");
         sb.append("commit " + this.id + "\n");
         if (parents.size() == 2) {
-            sb.append("Merge: " + parents.get(0).substring(0, 7) + " " + parents.get(1).substring(0, 7));
+            String p0 = parents.get(0).substring(0, 7);
+            String p1 = parents.get(1).substring(0, 7);
+            sb.append("Merge: " + p0 + " " + p1);
         }
         sb.append("Date: " + getDate() + "\n");
         sb.append(message + "\n");
@@ -154,9 +142,10 @@ public class Commit implements Serializable {
         }
         for (String file : untracked) {
             String currFileId = new Blob(file, dir).getBlobId();
-            String id = blobs.getOrDefault(file, null);
-            if (!currFileId.equals(id)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            String blobId = blobs.getOrDefault(file, null);
+            if (!currFileId.equals(blobId)) {
+                String err = "There is an untracked file in the way; delete it, or add and commit it first.";
+                System.out.println(err);
                 System.exit(0);
             }
         }
