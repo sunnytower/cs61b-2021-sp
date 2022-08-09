@@ -63,8 +63,6 @@ public class Repository {
         writeContents(HEAD, branch);
         // initial STAGE.
         new StagingArea().save(STAGE);
-        //debug
-        System.out.println("initial commit id " + initial.getId());
     }
     public static void add(String filename) {
         Blob blob = new Blob(filename, CWD);
@@ -97,8 +95,6 @@ public class Repository {
             blob.save(join(STAGING_DIR, blobId));
             stage.add(filename, blobId);
             stage.save(STAGE);
-            //debug
-            System.out.println("add blob id " + blobId);
         }
     }
     public static void commit(String message) {
@@ -120,8 +116,6 @@ public class Repository {
         setHeadToNewCommit(commit);
         //save commits to files.
         commit.save(join(COMMITS_DIR, commit.getId()));
-        //debug
-        System.out.println("new commit id " + commit.getId());
     }
     public static void rm(String filename) {
         //failure cases.
@@ -143,8 +137,6 @@ public class Repository {
         if (blob.exists() && blobId.equals(headBId)) {
             stage.getRemoved().add((filename));
             restrictedDelete(join(CWD, filename));
-            //debug
-            System.out.println("delete the " + filename + "in workspaces");
         }
         stage.save(STAGE);
     }
