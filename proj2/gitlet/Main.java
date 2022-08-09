@@ -58,19 +58,26 @@ public class Main {
                 break;
             case "checkout":
                 Repository.checkInitial();
-                int length = args.length;
-                if (length > 4 || length < 2) {
-                    System.out.println("Incorrect operands.");
-                    System.exit(0);
-                } else if (length == 3){
+                if (args.length == 3) {
                     //checkout -- filename.
+                    if (!args[1].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+                    }
                     Repository.checkoutFile(args[2]);
-                } else if (length == 4) {
+                } else if (args.length == 4) {
                     //checkout [commit id] -- filename.
+                    if (!args[2].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+                    }
                     Repository.checkoutCommit(args[1], args[3]);
-                } else {
+                } else if (args.length == 2) {
                     //checkout branch
                     Repository.checkoutBranch(args[1]);
+                } else {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
                 }
                 break;
             case "branch":

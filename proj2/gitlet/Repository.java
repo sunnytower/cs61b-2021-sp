@@ -281,6 +281,7 @@ public class Repository {
             if (!headFiles.contains(file) && !stageFiles.contains(file)) {
                 untracked.add(file);
             }
+            //mac system files.
 //            if (file.contains(".DS_")) {
 //                untracked.remove(file);
 //            }
