@@ -132,12 +132,13 @@ public class Repository {
         //if the file is already staged for addition, unstage it.
         if (stageBId != null) {
             stage.getAdded().remove(filename);
+        } else {
+            stage.getRemoved().add(filename);
         }
         Blob blob = new Blob(filename, CWD);
         String blobId = blob.getBlobId();
         // if the file is tracked in current commit, just delete it in working directory.
         if (blob.exists() && blobId.equals(headBId)) {
-            stage.getRemoved().add((filename));
             restrictedDelete(join(CWD, filename));
         }
         stage.save(STAGE);
