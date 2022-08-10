@@ -137,10 +137,10 @@ public class Commit implements Serializable {
     }
 
     public void checkUntrackedFile(List<String> untracked, File dir) {
-        String e = "There is an untracked file in the way; delete it, or add and commit it first.";
         if (untracked.isEmpty()) {
             return;
         }
+        String e = "There is an untracked file in the way; delete it, or add and commit it first.";
         for (String file : untracked) {
             String currFileId = new Blob(file, dir).getBlobId();
             String blobId = blobs.getOrDefault(file, null);
@@ -149,5 +149,9 @@ public class Commit implements Serializable {
                 System.exit(0);
             }
         }
+    }
+    public static Commit nameToCommit(String name, File dir) {
+        File branch = join(dir, name);
+        return Commit.idToCommit(readContentsAsString(branch));
     }
 }

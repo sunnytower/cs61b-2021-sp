@@ -249,7 +249,7 @@ public class Repository {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
-        Commit otherBranch = getCommitFromBranchName(branchName);
+        Commit otherBranch = Commit.nameToCommit(branchName, HEADS_DIR);
         //check untracked files.
         otherBranch.checkUntrackedFile(getUntrakcedFile(), CWD);
         // clean stagingArea.
@@ -272,7 +272,42 @@ public class Repository {
         writeContents(join(HEADS_DIR, branchName), getHead().getId());
 
     }
+    public static void rmBranch(String branchName) {
+        List<String> allBranchNames = plainFilenamesIn(HEADS_DIR);
+        if (!allBranchNames.contains(branchName)) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+        String headBranchName = readContentsAsString(HEAD);
+        if (headBranchName.equals(branchName)) {
+            System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+        //delete the branch file.
+        File branchFile = join(HEADS_DIR, branchName);
+        branchFile.delete();
+    }
+    public static void reset(String commitId) {
+        //failure case.
+        Commit givenCommit = Commit.idToCommit(commitId);
+        if (givenCommit == null) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        Commit head = getHead();
+        head.checkUntrackedFile(getUntrakcedFile(), CWD);
 
+        //Checks out all the files tracked by the given commit.
+        cleanStagingAreaAndSave();
+        // overwrite the working directory.
+        // maybe not safe!!!!!!!!!
+        for (File file : CWD.listFiles()) {
+            restrictedDelete(file);
+        }
+        givenCommit.writeAllFiles(CWD);
+        //change the HEAD to current branch.
+        setHeadToNewCommit(givenCommit);
+    }
     private static List<String> getUntrakcedFile() {
         List<String> untracked = new ArrayList<>();
         Set<String> headFiles = getHead().getBlobs().keySet();
@@ -282,17 +317,17 @@ public class Repository {
                 untracked.add(file);
             }
             //mac system files.
-//            if (file.contains(".DS_")) {
-//                untracked.remove(file);
-//            }
+            if (file.contains(".DS_")) {
+                untracked.remove(file);
+            }
         }
 
         return untracked;
     }
-    private static Commit getCommitFromBranchName(String name) {
-        File branch = join(HEADS_DIR, name);
-        return Commit.idToCommit(readContentsAsString(branch));
-    }
+//    private static Commit getCommitFromBranchName(String name) {
+//        File branch = join(HEADS_DIR, name);
+//        return Commit.idToCommit(readContentsAsString(branch));
+//    }
     private static Commit getHead() {
         String headBranchName = readContentsAsString(HEAD);
         File branchFile =  join(HEADS_DIR, headBranchName);
