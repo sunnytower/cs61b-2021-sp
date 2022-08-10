@@ -106,7 +106,6 @@ public class Repository {
             System.out.println("Please enter a commit message.");
             System.exit(0);
         }
-        //if stagingArea is empty
         if (getStage().isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
@@ -217,8 +216,8 @@ public class Repository {
 
     public static void checkoutCommit(String commitId, String filename) {
         Commit commit = Commit.idToCommit(commitId);
-        // commit don't exists.
         if (commit == null) {
+            // failure case.
             System.out.println("No commit with that id exists.");
             System.exit(0);
         } else {
@@ -229,6 +228,7 @@ public class Repository {
     private static void checkoutFileFromCommit(String filename, Commit commit) {
         String commitId = commit.getBlobs().getOrDefault(filename, null);
         if (commitId == null) {
+            // failure case.
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         } else {
@@ -237,13 +237,12 @@ public class Repository {
         }
     }
     public static void checkoutBranch(String branchName) {
-        //if current branch is checkout-branch.
+        //failure cases.
         String headBranchName = readContentsAsString(HEAD);
         if (headBranchName.equals(branchName)) {
             System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
-        //if branchName doesn't exists.
         List<String> branchesName = plainFilenamesIn(HEADS_DIR);
         if (!branchesName.contains(branchName)) {
             System.out.println("No such branch exists.");
@@ -266,6 +265,7 @@ public class Repository {
     public static void branch(String branchName) {
         List<String> branchesName = plainFilenamesIn(HEADS_DIR);
         if (branchesName.contains(branchName)) {
+            // failure case.
             System.out.println("A branch with that name already exists.");
             System.exit(0);
         }
@@ -273,13 +273,10 @@ public class Repository {
 
     }
     public static void rmBranch(String branchName) {
-        List<String> allBranchNames = plainFilenamesIn(HEADS_DIR);
-        if (!allBranchNames.contains(branchName)) {
-            System.out.println("A branch with that name does not exist.");
-            System.exit(0);
-        }
+        checkBranchNameExists(branchName);
         String headBranchName = readContentsAsString(HEAD);
         if (headBranchName.equals(branchName)) {
+            // failure case.
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
@@ -308,6 +305,45 @@ public class Repository {
         //change the HEAD to current branch.
         setHeadToNewCommit(givenCommit);
     }
+    public static void merge(String branchName) {
+        //failure cases.
+        if (!getStage().isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+        checkBranchNameExists(branchName);
+        if (readContentsAsString(HEAD).equals(branchName)) {
+            System.out.println("Cannot merge a branch with itself.");
+            System.exit(0);
+        }
+        getHead().checkUntrackedFile(getUntrakcedFile(), CWD);
+        //find the common ancestor.
+        //if branchCommit == splitCommit. do nothing.
+        System.out.println("Given branch is an ancestor of the current branch.");
+        System.exit(0);
+        //if headBranchCommit = splitCommit
+        checkoutBranch(branchName);
+        System.out.println("Current branch fast-forwarded.");
+        System.exit(0);
+        //files is all splitCommit and HeadCommit and branchCommit tracked.
+
+        //files modified in given branch but not head branch, staged for addition and change to given branch.
+        //files modified in head branch but not given branch, just do nothing.
+        //files being deleted(modified in the same way) in both branch, do nothing.
+        //files not present in other and unmodified in head, remove files. staged for removal.
+        //files not present in head and unmodified in other,remain remove.
+        //files is only exists in other, just use other version.
+        //files is only exists in head, just use head version.
+        //conflict!!!!!!
+
+    }
+    public static void checkBranchNameExists(String name) {
+        List<String> allBranchNames = plainFilenamesIn(HEADS_DIR);
+        if (!allBranchNames.contains(name)) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+    }
     private static List<String> getUntrakcedFile() {
         List<String> untracked = new ArrayList<>();
         Set<String> headFiles = getHead().getBlobs().keySet();
@@ -324,10 +360,6 @@ public class Repository {
 
         return untracked;
     }
-//    private static Commit getCommitFromBranchName(String name) {
-//        File branch = join(HEADS_DIR, name);
-//        return Commit.idToCommit(readContentsAsString(branch));
-//    }
     private static Commit getHead() {
         String headBranchName = readContentsAsString(HEAD);
         File branchFile =  join(HEADS_DIR, headBranchName);
