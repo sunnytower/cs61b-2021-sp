@@ -239,7 +239,7 @@ public class Repository {
     public static void checkoutBranch(String branchName) {
         //if current branch is checkout-branch.
         String headBranchName = readContentsAsString(HEAD);
-        if (headBranchName == branchName) {
+        if (headBranchName.equals(branchName)) {
             System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
