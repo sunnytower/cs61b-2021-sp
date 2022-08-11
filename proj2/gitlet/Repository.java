@@ -129,12 +129,7 @@ public class Repository {
             System.out.println("No reason to remove the file.");
             System.exit(0);
         }
-        //if the file is already staged for addition, unstage it.
-        if (stageBId != null) {
-            stage.getAdded().remove(filename);
-        } else {
-            stage.getRemoved().add(filename);
-        }
+        stage.remove(filename);
         Blob blob = new Blob(filename, CWD);
         String blobId = blob.getBlobId();
         // if the file is tracked in current commit, just delete it in working directory.
@@ -250,11 +245,10 @@ public class Repository {
         }
         Commit otherBranch = Commit.nameToCommit(branchName, HEADS_DIR);
         //check untracked files.
-        otherBranch.checkUntrackedFile(getUntrakcedFile(), CWD);
+        otherBranch.checkUntrackedFile(getUntrackedFile(), CWD);
         // clean stagingArea.
         cleanStagingAreaAndSave();
         // overwrite the working directory.
-        // maybe not safe!!!!!!!!!
         for (File file : CWD.listFiles()) {
             restrictedDelete(file);
         }
@@ -292,12 +286,10 @@ public class Repository {
             System.exit(0);
         }
         Commit head = getHead();
-        head.checkUntrackedFile(getUntrakcedFile(), CWD);
-
+        head.checkUntrackedFile(getUntrackedFile(), CWD);
         //Checks out all the files tracked by the given commit.
         cleanStagingAreaAndSave();
         // overwrite the working directory.
-        // maybe not safe!!!!!!!!!
         for (File file : CWD.listFiles()) {
             restrictedDelete(file);
         }
@@ -316,7 +308,7 @@ public class Repository {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
-        getHead().checkUntrackedFile(getUntrakcedFile(), CWD);
+        getHead().checkUntrackedFile(getUntrackedFile(), CWD);
         //find the common ancestor.
         //if branchCommit == splitCommit. do nothing.
         System.out.println("Given branch is an ancestor of the current branch.");
@@ -344,7 +336,12 @@ public class Repository {
             System.exit(0);
         }
     }
-    private static List<String> getUntrakcedFile() {
+
+    /**
+     *
+     * @return all files not staged or in head commit.
+     */
+    private static List<String> getUntrackedFile() {
         List<String> untracked = new ArrayList<>();
         Set<String> headFiles = getHead().getBlobs().keySet();
         Set<String> stageFiles = getStage().getAdded().keySet();
@@ -352,12 +349,7 @@ public class Repository {
             if (!headFiles.contains(file) && !stageFiles.contains(file)) {
                 untracked.add(file);
             }
-            //mac system files.
-            if (file.contains(".DS_")) {
-                untracked.remove(file);
-            }
         }
-
         return untracked;
     }
     private static Commit getHead() {

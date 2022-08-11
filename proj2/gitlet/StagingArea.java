@@ -23,9 +23,18 @@ public class StagingArea implements Serializable {
         added.put(filename, blobId);
         removed.remove(filename);
     }
+
+    /**
+     * if file is staged for addition, unstage it, else add to removed set.
+     * @param filename
+     */
     public void remove(String filename) {
-        added.remove(filename);
-        removed.remove(filename);
+        String stageBId = getAdded().getOrDefault(filename, null);
+        if (stageBId != null) {
+            getAdded().remove(filename);
+        } else {
+            getRemoved().add(filename);
+        }
     }
     public Map<String, String> getAdded() {
         return added;
