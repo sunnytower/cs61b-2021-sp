@@ -204,16 +204,4 @@ public class Commit implements Serializable {
      * @param blob
      * @return if deleted or modified.
      */
-    public boolean isModified(Blob blob) {
-        String myBlobId = blobs.getOrDefault(blob.getFilename(), null);
-        return myBlobId == null && !myBlobId.equals(blob.getBlobId());
-    }
-    public boolean isExists(Blob blob) {
-        String tmp = blobs.getOrDefault(blob.getFilename(), null);
-        return tmp != null;
-    }
-    public Blob nameToBlob(String name) {
-        String blobId = blobs.getOrDefault(name, null);
-        return Blob.idToBlob(blobId, BLOBS_DIR);
-    }
 }
