@@ -332,6 +332,7 @@ public class Repository {
         // reference: https://www.youtube.com/watch?v=JR3OYCMv9b4&t=929s
         Set<String> filenames =  getAllFilenames(split, head, other);
         for (String filename : filenames) {
+            //use "" to make life easier.
             String sId = split.getBlobs().getOrDefault(filename, "");
             String hId = head.getBlobs().getOrDefault(filename, "");
             String oId = other.getBlobs().getOrDefault(filename, "");
@@ -346,8 +347,8 @@ public class Repository {
                     add(filename);
                 }
             } else {
-                String headContent = getContent(hId);
-                String otherContent = getContent(oId);
+                String[] headContent = getContent(hId).split("\n");
+                String[] otherContent = getContent(oId).split("\n");
                 String conflictContent = getConflictContent(headContent, otherContent);
                 File file = join(CWD, filename);
                 writeContents(file, conflictContent);
@@ -356,6 +357,29 @@ public class Repository {
         }
         String mes = "Merged " + branchName + " into " + headBranchName + ".";
         setCommit(mes, List.of(head, other));
+    }
+    private static String getConflictContent(String[] head, String[] other) {
+        StringBuilder sb = new StringBuilder();
+        int len1 = head.length, len2 = other.length;
+        int i = 0, j = 0;
+        while (i < len1 && j < len2) {
+            if (head[i].equals(other[j])) {
+                sb.append(head[i]);
+            } else {
+                sb.append(getConflictContent(head[i], other[j]));
+            }
+            i++;
+            j++;
+        }
+        while (i < len1) {
+            sb.append(getConflictContent(head[i], ""));
+            i++;
+        }
+        while (j < len2) {
+            sb.append(getConflictContent("", other[j]));
+            j++;
+        }
+        return sb.toString();
     }
     private static String getConflictContent(String head, String other) {
         StringBuilder sb = new StringBuilder();
