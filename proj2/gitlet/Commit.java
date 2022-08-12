@@ -7,8 +7,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static gitlet.Repository.BLOBS_DIR;
-import static gitlet.Repository.COMMITS_DIR;
+import static gitlet.Repository.*;
 import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
@@ -150,8 +149,60 @@ public class Commit implements Serializable {
             }
         }
     }
-    public static Commit nameToCommit(String name, File dir) {
-        File branch = join(dir, name);
+    public static Commit branchToCommit(String name) {
+        File branch = join(HEADS_DIR, name);
         return Commit.idToCommit(readContentsAsString(branch));
+    }
+
+    /**
+     *
+     * @param a
+     * @return return a's parents list backward.
+     */
+    public static List<String> getParentsList(Commit a) {
+        List<String> list = new ArrayList<>();
+        String cur = a.getId();
+        while (cur != null) {
+            list.add(cur);
+            a = Commit.idToCommit(cur);
+            cur = a.getFirstParentId();
+        }
+        return list;
+    }
+
+    /**
+     *
+     * @param a
+     * @param b
+     * @return return the common ancestor.
+     */
+    public static Commit findCommonAncestor(Commit a, Commit b) {
+        List<String> ap = Commit.getParentsList(a);
+        Collections.reverse(ap);
+        List<String> bp = Commit.getParentsList(b);
+        Collections.reverse(bp);
+        String res = null;
+        for (int i = 0; i < bp.size() && i < ap.size() && ap.get(i).equals(bp.get(i)); ++i) {
+            res = ap.get(i);
+        }
+        return Commit.idToCommit(res);
+    }
+
+    /**
+     *
+     * @param blob
+     * @return if deleted or modified.
+     */
+    public boolean isModified(Blob blob) {
+        String myBlobId = blobs.getOrDefault(blob.getFilename(), null);
+        return myBlobId == null && !myBlobId.equals(blob.getBlobId());
+    }
+    public boolean isExists(Blob blob) {
+        String tmp = blobs.getOrDefault(blob.getFilename(), null);
+        return tmp != null;
+    }
+    public Blob nameToBlob(String name) {
+        String blobId = blobs.getOrDefault(name, null);
+        return Blob.idToBlob(blobId, BLOBS_DIR);
     }
 }

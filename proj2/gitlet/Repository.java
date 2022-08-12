@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -106,12 +107,15 @@ public class Repository {
             System.out.println("Please enter a commit message.");
             System.exit(0);
         }
+        setCommit(message, List.of(getHead()));
+    }
+    private static void setCommit(String mes, List<Commit> parents) {
         if (getStage().isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
         }
         //copy from parent, save the stagingArea file to blobs.
-        Commit commit = new Commit(message, List.of(getHead()), getStage());
+        Commit commit = new Commit(mes, parents, getStage());
         //clean stagingArea and save to the blobs dir.
         cleanStagingAreaAndSave();
         //set the HEAD and branch to new commit. (if no branch, just update branch content)
@@ -243,7 +247,7 @@ public class Repository {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
-        Commit otherBranch = Commit.nameToCommit(branchName, HEADS_DIR);
+        Commit otherBranch = Commit.branchToCommit(branchName);
         //check untracked files.
         otherBranch.checkUntrackedFile(getUntrackedFile(), CWD);
         // clean stagingArea.
@@ -298,8 +302,11 @@ public class Repository {
         setHeadToNewCommit(givenCommit);
     }
     public static void merge(String branchName) {
+        Commit head = getHead();
+        String headBranchName = readContentsAsString(HEAD);
+        StagingArea stage = getStage();
         //failure cases.
-        if (!getStage().isEmpty()) {
+        if (!stage.isEmpty()) {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
@@ -308,26 +315,40 @@ public class Repository {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
-        getHead().checkUntrackedFile(getUntrackedFile(), CWD);
-        //find the common ancestor.
+        head.checkUntrackedFile(getUntrackedFile(), CWD);
+        Commit other = Commit.branchToCommit(branchName);
+        Commit split = Commit.findCommonAncestor(head, other);
         //if branchCommit == splitCommit. do nothing.
-        System.out.println("Given branch is an ancestor of the current branch.");
-        System.exit(0);
+        if (split.getId().equals(other.getId())) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            System.exit(0);
+        }
         //if headBranchCommit = splitCommit
-        checkoutBranch(branchName);
-        System.out.println("Current branch fast-forwarded.");
-        System.exit(0);
-        //files is all splitCommit and HeadCommit and branchCommit tracked.
-
-        //files modified in given branch but not head branch, staged for addition and change to given branch.
-        //files modified in head branch but not given branch, just do nothing.
-        //files being deleted(modified in the same way) in both branch, do nothing.
-        //files not present in other and unmodified in head, remove files. staged for removal.
-        //files not present in head and unmodified in other,remain remove.
-        //files is only exists in other, just use other version.
-        //files is only exists in head, just use head version.
-        //conflict!!!!!!
-
+        if (head.getId().equals(other.getId())) {
+            checkoutBranch(branchName);
+            System.out.println("Current branch fast-forwarded.");
+            System.exit(0);
+        }
+        // reference: https://www.youtube.com/watch?v=JR3OYCMv9b4&t=929s
+        Set<String> filenames =  getAllFilenames(split, head, other);
+        for (String filename : filenames) {
+            String sId = split.getBlobs().getOrDefault(filename, "");
+            String hId = head.getBlobs().getOrDefault(filename, "");
+            String oId = other.getBlobs().getOrDefault(filename, "");
+            if (sId.equals(oId) || hId.equals(oId)) {
+                continue;
+            } else if (hId.equals(sId)) {
+                if (oId.equals("")) {
+                    rm(filename);
+                } else {
+                    add(filename);
+                }
+            } else {
+                //conflict.
+            }
+        }
+        String mes = "Merged " + branchName + " into " + headBranchName + ".";
+        setCommit(mes, List.of(head, other));
     }
     public static void checkBranchNameExists(String name) {
         List<String> allBranchNames = plainFilenamesIn(HEADS_DIR);
@@ -336,7 +357,13 @@ public class Repository {
             System.exit(0);
         }
     }
-
+    private static Set<String> getAllFilenames(Commit split, Commit head, Commit other) {
+        Set<String> set = new HashSet<>();
+        set.addAll(split.getBlobs().keySet());
+        set.addAll(head.getBlobs().keySet());
+        set.addAll(other.getBlobs().keySet());
+        return set;
+    }
     /**
      *
      * @return all files not staged or in head commit.
