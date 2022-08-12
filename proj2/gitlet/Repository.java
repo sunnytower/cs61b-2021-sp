@@ -318,13 +318,14 @@ public class Repository {
         head.checkUntrackedFile(getUntrackedFile(), CWD);
         Commit other = Commit.branchToCommit(branchName);
         Commit split = Commit.findCommonAncestor(head, other);
+        System.out.println(split.getId());
         //if branchCommit == splitCommit. do nothing.
         if (split.getId().equals(other.getId())) {
             System.out.println("Given branch is an ancestor of the current branch.");
             System.exit(0);
         }
         //if headBranchCommit = splitCommit
-        if (head.getId().equals(other.getId())) {
+        if (head.getId().equals(split.getId())) {
             checkoutBranch(branchName);
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
@@ -341,14 +342,36 @@ public class Repository {
                 if (oId.equals("")) {
                     rm(filename);
                 } else {
+                    Blob blob = Blob.idToBlob(oId, BLOBS_DIR);
+                    blob.writeFile(join(CWD, filename));
                     add(filename);
                 }
             } else {
-                //conflict.
+                String headContent = getContent(hId);
+                String otherContent = getContent(oId);
+                String conflictContent = getConflictContent(headContent, otherContent);
+                File file = join(CWD, filename);
+                writeContents(file, conflictContent);
+                System.out.println("Encountered a merge conflict.");
             }
         }
         String mes = "Merged " + branchName + " into " + headBranchName + ".";
         setCommit(mes, List.of(head, other));
+    }
+    private static String getConflictContent(String head, String other) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<<<<<<< HEAD\n");
+        sb.append(head.equals("") ? head : head + "\n");
+        sb.append("=======\n");
+        sb.append(other.equals("") ? other : other + "\n");
+        sb.append(">>>>>>>\n");
+        return sb.toString();
+    }
+    private static String getContent(String blobId) {
+        if (blobId.equals("")) {
+            return "";
+        }
+        return Blob.idToBlob(blobId, BLOBS_DIR).getContentsAsString();
     }
     public static void checkBranchNameExists(String name) {
         List<String> allBranchNames = plainFilenamesIn(HEADS_DIR);

@@ -83,7 +83,7 @@ public class Commit implements Serializable {
         if (parents.size() == 2) {
             String p0 = parents.get(0).substring(0, 7);
             String p1 = parents.get(1).substring(0, 7);
-            sb.append("Merge: " + p0 + " " + p1);
+            sb.append("Merge: " + p0 + " " + p1 + "\n");
         }
         sb.append("Date: " + getDate() + "\n");
         sb.append(message + "\n");
