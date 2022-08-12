@@ -318,7 +318,6 @@ public class Repository {
         head.checkUntrackedFile(getUntrackedFile(), CWD);
         Commit other = Commit.branchToCommit(branchName);
         Commit split = Commit.findCommonAncestor(head, other);
-        System.out.println(split.getId());
         //if branchCommit == splitCommit. do nothing.
         if (split.getId().equals(other.getId())) {
             System.out.println("Given branch is an ancestor of the current branch.");

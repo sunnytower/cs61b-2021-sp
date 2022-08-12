@@ -159,15 +159,21 @@ public class Commit implements Serializable {
      * @param a
      * @return return a's parents list backward.
      */
-    public static List<String> getParentsList(Commit a) {
-        List<String> list = new ArrayList<>();
-        String cur = a.getId();
-        while (cur != null) {
-            list.add(cur);
-            a = Commit.idToCommit(cur);
-            cur = a.getFirstParentId();
+    public static Set<String> getParentsList(Commit a) {
+        Set<String> res = new HashSet<>();
+        Queue<Commit> queue = new LinkedList<>();
+        queue.add(a);
+        while (!queue.isEmpty()) {
+            Commit commit = queue.poll();
+            res.add(commit.getId());
+            if (!commit.getParents().isEmpty()) {
+                for (String parentId : commit.getParents()) {
+                    queue.add(Commit.idToCommit(parentId));
+                }
+            }
         }
-        return list;
+        return res;
+
     }
 
     /**
@@ -177,15 +183,20 @@ public class Commit implements Serializable {
      * @return return the common ancestor.
      */
     public static Commit findCommonAncestor(Commit a, Commit b) {
-        List<String> ap = Commit.getParentsList(a);
-        Collections.reverse(ap);
-        List<String> bp = Commit.getParentsList(b);
-        Collections.reverse(bp);
-        String res = null;
-        for (int i = 0; i < bp.size() && i < ap.size() && ap.get(i).equals(bp.get(i)); ++i) {
-            res = ap.get(i);
+        Set<String> aParents = Commit.getParentsList(a);
+        Queue<Commit> queue = new LinkedList<>();
+        while (!queue.isEmpty()) {
+            Commit commit = queue.poll();
+            if (aParents.contains(commit.getId())) {
+                return commit;
+            }
+            if (!commit.getParents().isEmpty()) {
+                for (String parentId : commit.getParents()) {
+                    queue.add(Commit.idToCommit(parentId));
+                }
+            }
         }
-        return Commit.idToCommit(res);
+        return null;
     }
 
     /**
