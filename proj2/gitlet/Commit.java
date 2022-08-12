@@ -159,7 +159,7 @@ public class Commit implements Serializable {
      * @param a
      * @return return a's parents list backward.
      */
-    public static Set<String> getParentsList(Commit a) {
+    private static Set<String> getParentsList(Commit a) {
         Set<String> res = new HashSet<>();
         Queue<Commit> queue = new LinkedList<>();
         queue.add(a);
@@ -173,7 +173,6 @@ public class Commit implements Serializable {
             }
         }
         return res;
-
     }
 
     /**
@@ -183,8 +182,9 @@ public class Commit implements Serializable {
      * @return return the common ancestor.
      */
     public static Commit findCommonAncestor(Commit a, Commit b) {
-        Set<String> aParents = Commit.getParentsList(a);
+        Set<String> aParents = getParentsList(a);
         Queue<Commit> queue = new LinkedList<>();
+        queue.add(b);
         while (!queue.isEmpty()) {
             Commit commit = queue.poll();
             if (aParents.contains(commit.getId())) {
