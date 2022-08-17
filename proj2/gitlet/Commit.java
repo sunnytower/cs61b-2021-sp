@@ -199,9 +199,4 @@ public class Commit implements Serializable {
         return null;
     }
 
-    /**
-     *
-     * @param blob
-     * @return if deleted or modified.
-     */
 }
